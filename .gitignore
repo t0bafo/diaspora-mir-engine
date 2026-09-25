@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+downloads/
+*.mp3
+*.wav
+*.flac
+*.m4a
+*.ogg
+*.aiff
+node_modules/
+out/

@@ -1,0 +1,31 @@
+# Music Information Retrieval (MIR) System
+# Python 3.10+ required
+
+# Core audio analysis
+librosa==0.10.2
+soundfile==0.12.1
+audioread==3.0.1
+
+# Essentia - primary audio feature extractor
+# Install separately via: pip install essentia
+# Note: essentia wheels are CPU-only by default
+essentia==2.1b6.dev1110
+
+# Numerical computing
+numpy==1.26.4
+scipy==1.13.1
+pandas==2.2.2
+scikit-learn==1.5.0
+
+# Visualization
+matplotlib==3.9.0
+seaborn==0.13.2
+streamlit==1.35.0
+plotly==5.22.0
+
+# Utilities
+tqdm==4.66.4
+mutagen==1.47.0
+
+# Optional: for MP3 decoding support (via ffmpeg backend)
+# Requires ffmpeg installed on system: brew install ffmpeg
