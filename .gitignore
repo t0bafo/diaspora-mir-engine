@@ -3,11 +3,31 @@ __pycache__/
 *.pyc
 .DS_Store
 downloads/
+
+# Audio formats
 *.mp3
 *.wav
 *.flac
 *.m4a
 *.ogg
 *.aiff
+*.aac
+*.alac
+*.opus
+*.wma
+*.mid
+*.midi
+
+# Document / Binary deliverables & logs
+*.xlsx
+*.xls
+*.pdf
+*.log
+
+# Personal & coursework assets/audits
+nyu_gmft/assets/
+nyu_gmft/audition_audits/
+
 node_modules/
 out/
+
