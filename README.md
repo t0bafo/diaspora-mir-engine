@@ -1,352 +1,226 @@
-# 🎵 MIR System — *Music DNA*
+# 🌍 diaspora-mir-engine
 
-### A Culturally-Informed Music Information Retrieval Engine for the African Diaspora
+### A Culturally-Informed Music Information Retrieval (MIR) & Audio DSP Engine for African Diasporic Genres
 
-> **TL;DR:** Western music algorithms think Amapiano isn't danceable. We built the math to prove them wrong — and the unsupervised clustering agreed with us before we told it anything.
-
----
-
-## What This Actually Is
-
-Alright, so here's the deal.
-
-Spotify's audio features API — before they [killed public access in November 2024](https://developer.spotify.com/blog/2024-11-27-changes-to-the-web-api) — would score a TitoM & Yuppe *Tshwala Bam* (one of the biggest Amapiano records on the planet) at **0.41 danceability**. Meanwhile, a mid-tempo Ed Sheeran track sits comfortably at ~0.80. Kelvin Momo's meticulously produced Private School Amapiano gets lumped in the same recommendation bucket as four-on-the-floor Berlin deep house. That's not a quirk — that's a **systemic bias baked into the math**.
-
-The problem is structural: mainstream MIR systems use **isochronous (evenly-spaced) rhythm models** as their baseline for "good" rhythm. Syncopation gets penalized. Polyrhythmic complexity gets penalized. The exact things that *make* Afrobeats and Amapiano groove are the things the algorithm punishes.
-
-**This project is a from-scratch MIR engine that fixes that.**
-
-We built custom feature extractors, a culturally-informed danceability formula, ran unsupervised machine learning on 294 tracks across 3 genre classes — and the blind K-Means clustering **naturally rediscovered** the genre boundaries that musicologists draw by ear. No labels fed in. The physics just... agreed.
+**Author:** [Tobi Afolayan](https://github.com/t0bafo) — Creative Technologist & Music Tech Researcher  
+**Affiliation / Context:** NYU Music Technology / Global Music Studies  
+**Status:** Active Exploratory Research & Computational Musicology Prototype (v1.3.0)  
+**License:** MIT  
 
 ---
 
-## The Stack (For the Engineers)
+## 1. Executive Summary & Research Statement
 
-| Layer | Tech | Purpose |
-|-------|------|---------|
-| **Audio DSP** | [Essentia](https://essentia.upf.edu/) (C++ bindings) + Librosa fallback | Feature extraction at 44.1kHz |
-| **ML / Stats** | scikit-learn, NumPy, SciPy, pandas | K-Means clustering, StandardScaler, statistical profiling |
-| **Visualization** | Streamlit + Plotly (3D interactive), Matplotlib, Seaborn | Dashboard & publication figures |
-| **Data Acquisition** | yt-dlp, BeautifulSoup4, SQLite, custom scrapers | Automated corpus building from blogs + YouTube |
-| **Presentation** | Remotion (React 19 + TypeScript + D3.js + Tailwind v4) | 90-second programmatic video at 1080p/30fps |
-| **Audio Codec** | ffmpeg | MP3/M4A/FLAC decoding |
-| **Runtime** | Python 3.10+ / Node 18+ | Everything runs locally, no cloud dependencies |
+Mainstream Music Information Retrieval (MIR) systems and commercial streaming algorithms are historically grounded in Eurogenetic music theory. They rely on **isochronous (evenly-spaced) rhythmic baselines** that define "orderly" rhythm as metric regularity, penalizing polyrhythmic density and high syncopation as "chaotic" or "undanceable." 
+
+When applied to African Diasporic genres — such as Nigerian Afrobeats, South African Amapiano, and hybrid Afropiano — commercial audio pipelines break down:
+* Chart-topping Amapiano anthems (e.g., TitoM & Yuppe's *Tshwala Bam*) were scored as low as **0.41 in danceability** by commercial APIs, while mid-tempo pop tracks easily scored ~0.80.
+* Genre recommenders routinely lump South African Private School Amapiano into four-on-the-floor Berlin minimal techno simply because they share a tempo tier (~112–115 BPM).
+
+**`diaspora-mir-engine`** is an open-source audio DSP engine and computational musicology framework built from scratch to address this systemic algorithmic gap. By engineering transparent, culturally-informed rhythmic and timbral features, the engine extracts the physical signatures of African groove. In blind, unsupervised tests on a 294-track corpus, machine learning algorithms (K-Means) **naturally clustered the tracks into their respective cultural genres with up to 98.7% purity** without ever being shown a label.
 
 ---
 
-## The Feature Set — What We Actually Measure
+## 2. Motivation: The Isochronous Bias
 
-Here's where it gets interesting. We don't use Spotify's black-box features. Every metric is computed from raw audio waveforms with transparent, auditable math:
+In November 2024, Spotify deprecated public access to its audio features endpoint, eliminating outside auditability into how algorithmic scores are assigned. Prior empirical research confirmed that commercial danceability models:
+1. **Penalize Rhythmic Complexity:** High variance in Inter-Onset Intervals (IOIs) is treated as a timing error rather than intentional polyrhythmic syncopation.
+2. **Conflate Meter with Pulse:** Tracks with straight subdivisions receive higher pulse confidence than tracks featuring layered, cross-rhythmic counterpoints.
+3. **Ignore Genre-Defining Timbral Anchors:** The FM-synthesized log drum (originally pioneered via the Fruity DX10 preset by South African producers like MDU aka TRP) is completely unrepresented in Western feature sets.
 
-### 1. Rhythmic Complexity
-The coefficient of variation of Inter-Onset Intervals, passed through a nonlinear squash:
-
-```
-CV = σ(IOI) / μ(IOI)
-Complexity = tanh(1.5 × CV)
-```
-
-Filters out micro-noise intervals (<20ms). The `tanh` saturates extreme values so one weird transient doesn't blow up your score. This measures how *irregular* the rhythmic texture is — and crucially, **we don't penalize it**.
-
-### 2. Syncopation (16th-Note Offbeat Density)
-For each onset, we compute its phase position relative to the nearest beat:
-
-```
-phase = ((t - t_nearest_beat) / median_beat_period) mod 1.0
-```
-
-If the phase falls in `[0.15, 0.35]` or `[0.65, 0.85]` — the 16th-note offbeat zones — it counts as a syncopated hit. Syncopation = ratio of offbeat onsets to total onsets. This is *the* metric that Western systems get wrong by treating it as noise.
-
-### 3. Pulse Clarity
-Normalized autocorrelation of the onset strength envelope at the beat lag:
-
-```
-lag = (sr / hop_length) × (60 / BPM)
-pulse_clarity = max(ACF[lag ± 2 frames])
-```
-
-This measures how strongly the audio "locks" to its own beat grid. Amapiano has a *house music backbone* — even under layers of polyrhythmic complexity, there's a metronomic pulse underneath. This metric captures that.
-
-### 4. Log Drum Signature (v1.3.0)
-The **defining** timbral marker of Amapiano — the FM-synthesized log drum (originally the Fruity DX10 preset, pioneered by MDU aka TRP). We detect it by combining:
-
-- **Sub-bass energy ratio**: Energy in 30–120 Hz vs. full spectrum (30–20kHz) using `EnergyBand`
-- **Attack spectral centroid**: Sampled *specifically at onset frames* (not averaged over time), so we isolate the woody percussive transient
-
-```
-Log Drum Score = 0.70 × norm_sub_bass_ratio + 0.30 × (1.0 - norm_centroid)
-```
-
-Deep bass + low-centroid attacks = log drum. This single feature is why Cluster 2 in our K-Means achieves **98.7% Afrobeats purity** — Afrobeats simply doesn't have log drums.
-
-### 5. Culturally-Tuned Danceability
-Two formula versions, both deliberately **excluding complexity as a penalty**:
-
-```
-v1.2.1:  Danceability = 0.60 × Pulse Clarity + 0.40 × Syncopation
-v1.3.0:  Danceability = 0.50 × Pulse Clarity + 0.30 × Syncopation + 0.20 × Log Drum
-```
-
-The philosophical move: syncopation and polyrhythmic density are *features* of groove in African diasporic music, not bugs. The formula rewards them.
+This engine provides a fully reproducible, local-first alternative where every mathematical transformation is auditable, explainable, and culturally contextualized.
 
 ---
 
-## Project Architecture
+## 3. Mathematical Feature Architecture
+
+Rather than black-box embeddings, `diaspora-mir-engine` computes explicit acoustic descriptors directly from audio waveforms (44.1 kHz / 48.0 kHz):
 
 ```
-mir_system/
+Audio Input (WAV / MP3)
+      │
+      ├── [Essentia C++ RhythmExtractor2013] ──────────→ BPM & Beat Grid
+      │
+      ├── [NumPy Inter-Onset Interval (IOI)] ─────────→ Rhythmic Complexity: tanh(1.5 · CV)
+      │
+      ├── [NumPy 16th-Note Phase Quantization] ───────→ Syncopation Ratio (Offbeat Hits)
+      │
+      ├── [Onset Autocorrelation @ Beat Lag] ─────────→ Pulse Clarity (Internal Metronome)
+      │
+      ├── [Essentia EnergyBand (30–120Hz) + Centroid] ─→ Log Drum FM Timbral Signature
+      │
+      └── [Culturally-Tuned Synthesis] ───────────────→ Calibrated Danceability Index
+```
+
+### Feature Formulations
+
+1. **Rhythmic Complexity ($C_{IOI}$):**
+   Measures the coefficient of variation (CV) of Inter-Onset Intervals, squashed via a non-linear hyperbolic tangent to prevent transient outliers from blowing up the score:
+   $$\text{CV} = \frac{\sigma(\text{IOI})}{\mu(\text{IOI})}, \quad C_{IOI} = \tanh(1.5 \times \text{CV})$$
+   *Note: In this engine, high complexity is never penalized in groove scoring.*
+
+2. **Syncopation / Offbeat Density ($S_{16}$):**
+   For each detected onset at time $t$, its fractional phase relative to the nearest beat is calculated:
+   $$\phi = \left(\frac{t - t_{\text{nearest\_beat}}}{\tau_{\text{beat}}}\right) \pmod{1.0}$$
+   Onsets falling in the 16th-note offbeat intervals $\phi \in [0.15, 0.35] \cup [0.65, 0.85]$ are classified as syncopations. The metric is the ratio of offbeat to total onsets.
+
+3. **Pulse Clarity ($P_c$):**
+   The normalized autocorrelation of the onset strength envelope sampled at the beat period lag ($\pm 2$ frames). This reflects how rigorously the groove locks to its foundational pulse grid.
+
+4. **Log Drum Timbral Signature ($L_D$):**
+   Isolates the percussive, pitch-bent sub-bass transient unique to Amapiano by coupling sub-bass energy concentration ($30\text{--}120\text{ Hz}$) with attack-frame spectral centroid:
+   $$L_D = 0.70 \times \text{NormSubBassRatio} + 0.30 \times (1.0 - \text{NormOnsetCentroid})$$
+
+5. **Culturally-Tuned Danceability ($D_{\text{cult}}$):**
+   Excludes complexity penalties and actively rewards syncopated micro-groove and bass drive:
+   $$D_{\text{v1.3.0}} = 0.50 \times P_c + 0.30 \times S_{16} + 0.20 \times L_D$$
+
+---
+
+## 4. Empirical Benchmark Findings
+
+The system was evaluated against a verified **294-track corpus** across three diasporic classes:
+* **Afrobeats** (West Africa / Nigeria & Ghana)
+* **Amapiano** (South Africa — Private School, Sgija, Bacardi, Vocal)
+* **Afropiano** (The contemporary pan-African hybrid sound)
+
+### Unsupervised K-Means Clustering Validation
+
+To test whether the acoustic features correspond to genuine cultural boundaries, an unsupervised K-Means model ($k=3$) was executed on the normalized vector $[C_{IOI}, S_{16}, P_c, L_D]$ **without human genre labels**:
+
+| Cluster | Dominant Genre | Purity | Track Count ($n$) | Avg Syncopation | Avg Pulse Clarity | Avg Log Drum | Avg Danceability |
+|:---:|:---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **0** | **Amapiano (Pure)** | **90.0%** | 60 | 0.460 | 0.773 | 0.868 | 0.708 |
+| **1** | **Afropiano Bridge / Private School** | **80.0%** | 80 | 0.347 | 0.746 | 0.980 | 0.673 |
+| **2** | **Afrobeats (Pure)** | **98.7%** | 154 | 0.349 | 0.640 | 0.010 | 0.525 |
+
+**Key Takeaways:**
+* **98.7% Afrobeats Separation:** The absence of the FM log drum and distinct syncopation dynamics allowed blind separation of pure Afrobeats from South African styles.
+* **The "House Backbone" Hypothesis Confirmed:** Amapiano tracks consistently exhibit higher internal pulse clarity (mean 0.773 vs 0.640) than Afrobeats, demonstrating that Amapiano functions as an electronic dance music subgenre anchored to a rigid metronome despite its polyrhythmic surface.
+
+---
+
+## 5. Out-of-Distribution Auditing & NYU GMFT Tools
+
+As part of exploratory research at NYU GMFT, the engine includes auxiliary diagnostic tools in [`nyu_gmft/tools/`](file:///Users/tobafo/.gemini/antigravity/scratch/tech_projects/mir_system/nyu_gmft/tools/) to evaluate domain transfer when the engine is exposed to out-of-distribution (OOD) Western music (e.g., American Indie Rock / Synth-Punk).
+
+* **The Sub-Bass Trap:** In test cases with heavy compressed electric bass guitars and analog synthesizers below 120 Hz (e.g., Mitski's *Why Didn't You Stop Me*), the v1.3.0 log drum heuristic saturated at `1.0000` false-positive. 
+* **Insight:** Sub-bass energy + attack centroid is effective within club/electronic African diaspora genres, but requires multi-band harmonic-percussive source separation (HPSS) to prevent confusion with saturated rock/pop bass guitars.
+
+---
+
+## 6. Current Status & Research Roadmap
+
+| Phase | Milestone | Status |
+|:---|:---|:---:|
+| **Phase 1** | Baseline feature extractor (Librosa + Essentia) & 157 Afrobeats benchmark | Completed |
+| **Phase 2** | Curated 226-track Amapiano corpus + cross-genre rhythm metrics | Completed |
+| **Phase 3** | v1.3.0 Log Drum FM detector & unsupervised K-Means clustering (294 tracks) | Completed |
+| **Phase 4** | Interactive Streamlit data visualization dashboard | Completed |
+| **Phase 5** | Auxiliary diagnostics & OOD stress-testing tooling ([`nyu_gmft/tools/`](file:///Users/tobafo/.gemini/antigravity/scratch/tech_projects/mir_system/nyu_gmft/tools/)) | Completed |
+| **Phase 6** | Deep neural stem separation (Demucs / Open-Unmix) for isolated log drum timbre | In Progress |
+| **Phase 7** | Expansion to broader African Diaspora (Afro-Cuban, Dancehall, Gqom, Batida) | Planned |
+| **Phase 8** | Empirical streaming audit: quantifying discovery suppression & economic impact | Planned |
+
+---
+
+## 7. Project Architecture
+
+```
+diaspora-mir-engine/
 │
-├── analyze_track.py          # Core feature extraction engine (Essentia + Librosa)
-├── batch_analyze.py           # Batch processing, CSV export, auto-generated reports
-├── deep_analysis.py           # K-Means clustering, purity analysis, artist fingerprinting
-├── dashboard.py               # Streamlit interactive 3D/2D data explorer
-├── music_dna.json             # Full 294-track feature matrix (v1.3.0)
-├── requirements.txt           # Python dependencies
-├── transcribe.sh              # Whisper-based audio transcription utility
+├── analyze_track.py                   # Core feature extraction engine (Essentia + Librosa)
+├── batch_analyze.py                   # Corpus batch processor with statistical summaries
+├── deep_analysis.py                   # K-Means clustering, purity scoring & artist profiling
+├── dashboard.py                       # Interactive Streamlit dashboard (2D/3D Plotly)
+├── diaspora_corpus_features_v1_3.json # Full 294-track feature matrix (JSON benchmark)
+├── requirements.txt                   # Locked Python dependencies
+├── AMAPIANO_CRITERIA.md               # Musicological taxonomy & decision tree
+├── FINDINGS_v2_05052026.md            # Extended research findings log
 │
-├── afrobeats_scraper/         # Automated multi-source acquisition engine
-│   ├── automated_scraper.py   #   Main orchestrator (parallel scrape → download → extract)
-│   ├── trending_song_scraper.py #   Blog + chart scrapers (TrendyBeatz, TooXclusive, etc.)
-│   ├── multi_source_downloader.py # 6-tier download fallback chain
-│   ├── ai_metadata_extractor.py #   Offline AI feature extraction (37 Spotify-equivalent fields)
-│   ├── database.py            #   SQLite persistence layer (songs.db)
-│   ├── config.py              #   Scraper configuration & tuning
-│   └── tests/                 #   Test suite
+├── docs/                              # Research documentation & guides
+│   ├── RESEARCH_ESSAY.md              # Long-form thesis on algorithmic bias & cultural MIR
+│   └── VISUALS_GUIDE.md               # Guide to published benchmark figures
 │
-├── amapiano_corpus/           # Curated South African Amapiano dataset
-│   ├── amapiano_tracks.csv    #   226 hand-curated tracks (2018–2026) with subgenre tags
-│   ├── amapiano_downloader.py #   yt-dlp batch downloader with resume + confidence filtering
-│   ├── download_log.csv       #   Download audit trail
-│   └── analysis_v1_3/         #   v1.3.0 batch results (137 tracks)
-│       ├── analysis_results.csv
-│       └── *.png              #   Scatter, boxplot, KDE visualizations
+├── nyu_gmft/                          # NYU GMFT exploratory analysis & diagnostics
+│   └── tools/
+│       ├── audio_auxiliary.py         # Advanced auxiliary DSP (HPSS, Chroma key profile, Mid/Side)
+│       ├── build_onepager_pdf.py      # Publication-grade ReportLab audit PDF generator
+│       └── build_reconstruction_xlsx.py # Openpyxl arrangement timeline generator
 │
-├── full_dataset_v1/           # Phase 1 benchmark: 157 Afrobeats tracks (v1.2.1)
-│   ├── analysis_results.csv
-│   ├── README.md              #   Auto-generated batch report
-│   └── deep_analysis/         #   Initial single-genre clustering & findings
+├── amapiano_corpus/                   # Amapiano corpus metadata & analysis benchmarks
+│   ├── amapiano_tracks.csv            # Hand-curated track catalog with subgenre tags
+│   └── analysis_v1_3/                 # Batch result figures & tables
 │
-├── merged_dataset/            # Phase 8 culmination: 294 tracks, 3 genres, log drum integrated
-│   ├── FINDINGS.md            #   Full statistical report + cluster purity tables
-│   ├── final_labeled_dataset.csv
-│   ├── artist_signatures.csv  #   Per-artist acoustic fingerprints
-│   └── visuals/               #   K-Means vs ground-truth scatter plots
-│
-├── music-dna-story/           # Remotion programmatic video (React 19 + D3 + Tailwind v4)
-│   ├── src/
-│   │   ├── Composition.tsx    #   5-scene narrative assembly (TransitionSeries)
-│   │   ├── Scene1Hero.tsx     #   Tshwala Bam spotlight: Spotify 0.41 vs Music DNA 0.64
-│   │   ├── Scene2Waveform.tsx #   Animated frequency spectrum (log drum / perc / piano)
-│   │   ├── Scene3SplitScreen.tsx # Algorithm vs Diaspora Engine confrontation
-│   │   ├── Scene4Constellation.tsx # D3 scatter: 294 tracks, Amapiano separates live
-│   │   ├── Scene5Outro.tsx    #   Stats + wordmark + tagline
-│   │   ├── data.json          #   Embedded 294-track dataset for frontend rendering
-│   │   └── types.ts           #   TypeScript interfaces
-│   └── package.json           #   Remotion v4.0.457 + dependencies
-│
-├── MIR Story Assets/          # Editorial narrative drafts
-│   ├── story_draft.txt        #   Long-form investigative essay on algorithmic bias
-│   └── visuals_guide.txt      #   Visualization placement guide for presentation
-│
-├── AMAPIANO_CRITERIA.md       # Genre taxonomy & classification decision tree
-├── FINDINGS_v2_05052026.md    # v2 research findings (316 tracks, May 2026)
-├── nyu_gmft/                  # [NEW] — context incoming
-└── downloads/                 # Sample audio files
+├── full_dataset_v1/                   # Phase 1 Afrobeats single-genre benchmark
+└── merged_dataset/                    # Phase 3 cross-genre merged benchmark & visuals
 ```
 
 ---
 
-## The Results — Why This Matters
+## 8. Installation & Quickstart
 
-### Unsupervised Clustering Validates the Culture
+### Prerequisites
+* **macOS / Linux** with Python 3.10+
+* **ffmpeg** installed on host system (`brew install ffmpeg` on macOS, `sudo apt install ffmpeg` on Ubuntu)
 
-We ran K-Means (k=3) on the normalized feature vector `[complexity, syncopation, pulse_clarity, log_drum]` with **zero genre labels**. The algorithm had no idea what Amapiano or Afrobeats even is. Here's what it found:
-
-| Cluster | Dominant Genre | Purity | n | Syncopation | Pulse Clarity | Log Drum | Danceability |
-|---------|---------------|--------|---|-------------|---------------|----------|-------------|
-| 0 | **Amapiano** | **90.0%** | 60 | 0.460 | 0.773 | 0.868 | 0.708 |
-| 1 | Amapiano (Private School / Afropiano bridge) | 80.0% | 80 | 0.347 | 0.746 | 0.980 | 0.673 |
-| 2 | **Afrobeats** | **98.7%** | 154 | 0.349 | 0.640 | 0.010 | 0.525 |
-
-**98.7% Afrobeats purity.** The math separated the genres blind. That's not a tuned classifier — that's physics agreeing with culture.
-
-### The Danceability Correction
-
-Under our formula, the most danceable tracks in the corpus are:
-
-| Rank | Track | Artist | Score |
-|------|-------|--------|-------|
-| 1 | Sukakude | Kelvin Momo ft. Babalwa M | 0.799 |
-| 2 | The Grass is Greener | Mr JazziQ | 0.799 |
-| 3 | Lawuleka | MDU aka TRP ft. Kabza De Small | 0.797 |
-| 4 | Soul To Soul | Kelvin Momo | 0.795 |
-| 5 | Story To Tell | De Mthuda | 0.793 |
-
-Every single top-10 entry is Amapiano. Under Spotify's old formula, most of these would score in the 0.3–0.5 range. Under ours, they dominate. The math isn't doing anything magical — it's just *not punishing syncopation*.
-
-### Artist-Level Acoustic Fingerprints
-
-The system produces per-artist groove signatures. Some highlights:
-
-- **Kelvin Momo** (Private School Amapiano): Pulse Clarity **0.836** — the tightest house-music backbone in the dataset. Jazz Rhodes voicings over an unwavering 112.5 BPM grid.
-- **Shallipopi** (Nigerian Afrobeats): Syncopation **0.519** — highest in the entire corpus. The swing is the whole point.
-- **Wizkid** (Afrobeats): Pulse Clarity **0.594** — the signature Afrobeats "float" where the rhythm drifts more organically off-grid.
-
----
-
-## The Corpus
-
-**294 tracks** across 3 genre classes, built in phases:
-
-| Phase | Corpus | Tracks | Key Addition |
-|-------|--------|--------|-------------|
-| 1 | Afrobeats only | 157 | Baseline feature extraction (v1.2.1) |
-| 2 | + Amapiano | 316 | Cross-genre clustering, syncopation validation |
-| 3 | Merged + timbral | 294 | Log drum detection (v1.3.0), verified & deduplicated |
-
-### Genre Taxonomy (from `AMAPIANO_CRITERIA.md`)
-
-We wrote a full classification decision tree:
-
-```
-Step 1 — BPM:     108–118 → Step 2    |    120–130 → Afro-house (unless log drum + piano → afropiano)
-Step 2 — Harmony:  Electric piano/jazz synth → Step 3    |    Absent → flag as sgija subgenre
-Step 3 — Log Drum: Syncopated FM log drum lead → Step 4    |    Absent → exclude (deep house)
-Step 4 — Structure: 5+ min, build-and-layer → AMAPIANO    |    <4 min, verse-chorus → AFROPIANO
-```
-
-**The Rhythmic Anchor Rule:** *"If the core pulse is 112 BPM with a syncopated log drum, it is Amapiano regardless of the vocalist's nationality. If it is a 3-minute pop song with a 105 BPM Afropop groove and a log drum added for flavor, it remains Afrobeats."*
-
-Amapiano subgenres tracked: `private_school`, `sgija`, `mozambique`, `bacardi`, `tech_amapiano`, `vocal`, `instrumental`.
-
----
-
-## Data Acquisition Pipeline
-
-The `afrobeats_scraper/` is a full production scraping engine:
-
-```
-Discovery (TrendyBeatz / TooXclusive / NaijaMusic blogs)
-    ↓
-SQLite dedup check (songs.db, UNIQUE(artist, title))
-    ↓
-6-tier download fallback:
-    JustNaija → TrendyBeatz → TooXclusive → NaijaMusic → Audiomack → YouTube (yt-dlp)
-    ↓
-File validation: must exist, >1MB, duration 90s–900s
-    ↓
-AI metadata extraction (37 Spotify-equivalent fields, fully offline via Librosa + Mutagen)
-    ↓
-Incremental CSV export + HTML report generation
-```
-
-Runs as a daemon with 6-hour scrape intervals. No Spotify API dependency — everything is computed from raw audio.
-
-The `amapiano_corpus/` side has a separate `amapiano_downloader.py` targeting YouTube via `yt-dlp`, reading from a hand-curated 226-track CSV spanning 2018–2026 with confidence levels and subgenre tags.
-
----
-
-## The Video (music-dna-story/)
-
-A **90-second programmatic motion graphics piece** built with Remotion — because the story deserves more than a PDF.
-
-| Scene | Duration | What Happens |
-|-------|----------|-------------|
-| 1 — Hero | 15s | *Tshwala Bam* spotlight. Animated counters: Spotify 0.41 → Music DNA 0.64 |
-| 2 — Waveform | 20s | Three animated SVG frequency layers: sub-bass log drum, percussion, Rhodes |
-| 3 — Split Screen | 15s | Left: "The Algorithm" (Spotify). Right: "The Diaspora Engine" (us). +0.33 delta. |
-| 4 — Constellation | 20s | D3 scatter of all 294 tracks. At frame 200, Amapiano lifts off into its own golden cluster. |
-| 5 — Outro | 20s | Stats, wordmark, *"Built for the music the algorithm missed"* |
-
-Full HD 1920×1080, 30fps, cross-fade transitions between scenes.
-
----
-
-## Running It
-
-### Feature Extraction (Single Track)
+### Setup
 ```bash
-python analyze_track.py path/to/track.mp3 --output results.json
+# Clone the repository
+git clone https://github.com/t0bafo/diaspora-mir-engine.git
+cd diaspora-mir-engine
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### Batch Analysis
+### Usage Examples
+
+**1. Analyze a Single Track:**
 ```bash
-python batch_analyze.py path/to/audio/folder/ --output results/ --default-genre amapiano
+python analyze_track.py path/to/song.mp3 --output results.json
 ```
 
-### Deep Analysis (Clustering + Findings)
+**2. Batch Analyze an Audio Directory:**
+```bash
+python batch_analyze.py path/to/corpus/ --output results/ --default-genre amapiano
+```
+
+**3. Run Unsupervised K-Means & Cluster Purity Analysis:**
 ```bash
 python deep_analysis.py results/analysis_results.csv --output results/
 ```
 
-### Interactive Dashboard
+**4. Launch the Interactive Exploration Dashboard:**
 ```bash
 streamlit run dashboard.py
 ```
 
-### Video Render
-```bash
-cd music-dna-story/
-npm install
-npx remotion render MusicDNA out/music-dna.mp4
+---
+
+## 9. Citation
+
+If you reference this work, models, or datasets in your academic research, please cite:
+
+```bibtex
+@software{afolayan2026diaspora,
+  author = {Afolayan, Tobi},
+  title = {diaspora-mir-engine: A Culturally-Informed Music Information Retrieval Engine for African Diasporic Genres},
+  year = {2026},
+  url = {https://github.com/t0bafo/diaspora-mir-engine},
+  institution = {New York University}
+}
 ```
 
-### Setup
-```bash
-# System dependency
-brew install ffmpeg
-
-# Python environment
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
 ---
 
-## What We're Actually Onto
+## 10. Author & Contact
 
-Let me be real about what this project is building toward.
-
-**The immediate contribution** is a proof-of-concept that African diasporic music has a distinct, measurable mathematical topology — and that mainstream music tech infrastructure systematically misrepresents it. We have the data, the formulas, and the unsupervised validation to back that claim.
-
-**The bigger picture** is about who gets to define the math that music platforms run on. Every recommendation algorithm, every playlist generator, every A&R analytics dashboard, every sync licensing search tool — they all inherit the same Western-centric feature assumptions. When the features are wrong, everything downstream is wrong: discovery, royalties, cultural classification, market sizing.
-
-This system is a working alternative. It's not theoretical — it processes real audio, produces real metrics, and those metrics align with how actual listeners and musicologists understand these genres.
-
-**The business angle:** If you can mathematically distinguish Amapiano from Afrobeats from Afropiano — and you can prove mainstream platforms can't — you have a positioning argument for:
-- Genre-specific recommendation engines
-- Culturally-informed A&R analytics
-- Bias auditing tools for streaming platforms
-- Sync licensing search that actually understands sub-Saharan African music
-- Label/distributor analytics for the fastest-growing music markets on Earth
-
-**The academic angle:** Computational musicology paper material. Unsupervised clustering achieving 90–98% genre purity on a culturally contested corpus, with transparent feature engineering and a reproducible pipeline.
-
----
-
-## Current Status (September 2026)
-
-- ✅ Core extraction engine (v1.3.0) with timbral log drum detection
-- ✅ 294-track verified corpus across 3 genre classes
-- ✅ Unsupervised clustering with 90–98.7% purity
-- ✅ Interactive Streamlit dashboard
-- ✅ Automated scraping + download pipeline
-- ✅ 90-second Remotion video presentation
-- ✅ Genre taxonomy + classification decision tree
-- ✅ Artist-level acoustic fingerprinting
-- 🔲 `nyu_gmft/` — *incoming*
-
----
-
-## Dependencies
-
-**Python 3.10+**: `essentia==2.1b6.dev1110`, `librosa==0.10.2`, `numpy==1.26.4`, `scipy==1.13.1`, `pandas==2.2.2`, `scikit-learn==1.5.0`, `matplotlib==3.9.0`, `seaborn==0.13.2`, `streamlit==1.35.0`, `plotly==5.22.0`, `tqdm==4.66.4`, `mutagen==1.47.0`, `soundfile==0.12.1`, `audioread==3.0.1`
-
-**Node 18+** (for video): `remotion@4.0.457`, `react@19.2.3`, `d3@7.9.0`, `tailwindcss@4.0.0`
-
-**System**: `ffmpeg` (via Homebrew)
-
----
-
-*Built by someone who got tired of the algorithm not hearing what the culture already knows.*
+**Tobi Afolayan**  
+Creative Technologist & Music Tech Researcher  
+* GitHub: [@t0bafo](https://github.com/t0bafo)  
+* Web: [tobiafo.com](https://tobiafo.com)  

@@ -1,10 +1,20 @@
+# Environments & Python cache
 venv/
 __pycache__/
 *.pyc
 .DS_Store
-downloads/
 
-# Audio formats
+# Local agent & tooling scratch configs
+.claude/
+transcript.txt
+*.transcription*
+
+# Decoupled / Subordinate repositories (managed separately)
+afrobeats_scraper/
+music-dna-story/
+
+# Raw audio files & recordings (strictly forbidden from public repository)
+downloads/
 *.mp3
 *.wav
 *.flac
@@ -18,7 +28,7 @@ downloads/
 *.mid
 *.midi
 
-# Document / Binary deliverables & logs
+# Document binaries & execution logs
 *.xlsx
 *.xls
 *.pdf
@@ -28,6 +38,6 @@ downloads/
 nyu_gmft/assets/
 nyu_gmft/audition_audits/
 
+# Build artifacts
 node_modules/
 out/
-
