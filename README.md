@@ -152,6 +152,14 @@ diaspora-mir-engine/
 │   ├── amapiano_tracks.csv            # Hand-curated track catalog with subgenre tags
 │   └── analysis_v1_3/                 # Batch result figures & tables
 │
+├── music_dna/                         # Intelligent Album Playlist Curator & Similarity Engine
+│   ├── README.md                      # Music DNA documentation and CLI guide
+│   ├── database.py                    # SQLite storage layer for track vectors & metadata
+│   ├── ingest.py                      # Audio extraction & corpus ingestion pipeline
+│   ├── similarity.py                  # Normalized cosine similarity & centroid matching
+│   ├── playlist.py                    # BPM & energy-arc playlist sequencing
+│   └── __main__.py                    # CLI entrypoint (`python -m music_dna`)
+│
 ├── full_dataset_v1/                   # Phase 1 Afrobeats single-genre benchmark
 └── merged_dataset/                    # Phase 3 cross-genre merged benchmark & visuals
 ```
@@ -198,6 +206,13 @@ python deep_analysis.py results/analysis_results.csv --output results/
 **4. Launch the Interactive Exploration Dashboard:**
 ```bash
 streamlit run dashboard.py
+```
+
+**5. Curate Playlists with Music DNA:**
+```bash
+# Import benchmark corpus & query similar tracks
+python -m music_dna import-corpus diaspora_corpus_features_v1_3.json
+python -m music_dna discover "Amukelani" --sequence bpm -o playlist.m3u8
 ```
 
 ---
