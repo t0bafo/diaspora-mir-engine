@@ -140,7 +140,8 @@ diaspora-mir-engine/
 │
 ├── docs/                              # Research documentation & guides
 │   ├── RESEARCH_ESSAY.md              # Long-form thesis on algorithmic bias & cultural MIR
-│   └── VISUALS_GUIDE.md               # Guide to published benchmark figures
+│   ├── VISUALS_GUIDE.md               # Guide to published benchmark figures
+│   └── future-projects.md             # Planned work (album mixtapes with Music DNA)
 │
 ├── nyu_gmft/                          # NYU GMFT exploratory analysis & diagnostics
 │   └── tools/
