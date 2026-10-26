@@ -14,7 +14,6 @@ transcript.txt
 
 # Decoupled / Subordinate repositories (managed separately)
 afrobeats_scraper/
-music-dna-story/
 
 # Raw audio files & recordings (strictly forbidden from public repository)
 downloads/
