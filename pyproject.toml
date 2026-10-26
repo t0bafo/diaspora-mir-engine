@@ -25,9 +25,6 @@ dependencies = [
     "mutagen==1.47.0",
 ]
 
-[project.scripts]
-music-dna = "music_dna.__main__:main"
-
 [tool.setuptools.package-dir]
 "" = "packages"
 
