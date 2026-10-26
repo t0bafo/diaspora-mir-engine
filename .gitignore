@@ -39,6 +39,8 @@ downloads/
 # Personal & coursework assets/audits
 nyu_gmft/assets/
 nyu_gmft/audition_audits/
+scripts/nyu_gmft/assets/
+scripts/nyu_gmft/audition_audits/
 
 # Build artifacts & export bundles
 node_modules/
