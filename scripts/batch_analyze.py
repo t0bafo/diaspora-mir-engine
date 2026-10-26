@@ -18,18 +18,19 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 
-# Import core extraction logic from analyze_track
-import analyze_track
+# Import core extraction logic from mir_engine
+from mir_engine import extract_features, build_result, validate_file
+from mir_engine.extractor import SUPPORTED_EXTENSIONS
 
 def discover_files(directory: Path):
     """Recursively find all audio files in directory."""
     audio_files = []
-    for ext in analyze_track.SUPPORTED_EXTENSIONS:
+    for ext in SUPPORTED_EXTENSIONS:
         audio_files.extend(list(directory.rglob(f"*{ext}")))
         audio_files.extend(list(directory.rglob(f"*{ext.upper()}")))
     return sorted(list(set(audio_files)))
 
-def process_batch(files: list, manifest_file: Path = None, default_genre: str = None):
+def process_batch(files: list, manifest_file: Path = None, default_genre: str = None, output_dir: Path = None):
     """Run analysis on a list of files and return a list of result dicts."""
     results = []
     
@@ -47,9 +48,9 @@ def process_batch(files: list, manifest_file: Path = None, default_genre: str = 
     
     for i, f in enumerate(tqdm(files, desc="Batch Analysis")):
         try:
-            # We bypass the CLI of analyze_track and call its internal functions
-            features = analyze_track.extract_features(f)
-            res_envelope = analyze_track.build_result(f, features)
+            # We bypass the CLI of extractor and call its internal functions
+            features = extract_features(f)
+            res_envelope = build_result(f, features)
             
             # ... [genre logic remains same] ...
             genre = None
@@ -78,8 +79,8 @@ def process_batch(files: list, manifest_file: Path = None, default_genre: str = 
             results.append(flat_res)
             
             # Incremental save every 10 tracks
-            if (i + 1) % 10 == 0:
-                pd.DataFrame(results).to_csv("amapiano_corpus/analysis_v1_3/analysis_results.csv", index=False)
+            if (i + 1) % 10 == 0 and output_dir:
+                pd.DataFrame(results).to_csv(output_dir / "analysis_results_checkpoint.csv", index=False)
                 
         except Exception as e:
             print(f"\n[ERROR] Failed to process {f.name}: {e}")
@@ -181,7 +182,7 @@ def main():
         sys.exit(0)
 
     manifest_path = Path(args.manifest) if args.manifest else None
-    results = process_batch(files, manifest_file=manifest_path, default_genre=args.default_genre)
+    results = process_batch(files, manifest_file=manifest_path, default_genre=args.default_genre, output_dir=output_dir)
     if not results:
         print("No features extracted.")
         sys.exit(1)

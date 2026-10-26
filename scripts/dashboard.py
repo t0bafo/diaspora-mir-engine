@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from pathlib import Path
+from music_dna.config import BENCHMARKS_DIR
 
 st.set_page_config(page_title="MIR African Polyrhythm Analysis", layout="wide")
 
@@ -10,10 +11,9 @@ st.markdown("### Discovering the Mathematical DNA of Afrobeats and Amapiano")
 
 # ── Load Data
 def load_data():
-    base_path = Path(__file__).parent
     csv_paths = [
-        base_path / "full_dataset_v1/analysis_results.csv",
-        base_path / "amapiano_corpus/analysis_v1_3/analysis_results.csv"
+        BENCHMARKS_DIR / "full_dataset_v1" / "analysis_results.csv",
+        BENCHMARKS_DIR / "amapiano_corpus" / "analysis_v1_3" / "analysis_results.csv"
     ]
     dfs = []
     for p in csv_paths:

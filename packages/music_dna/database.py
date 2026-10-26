@@ -13,11 +13,12 @@ from typing import Optional
 import numpy as np
 
 from . import FEATURE_COLUMNS
+from .config import MUSIC_DNA_DB_PATH
 
 log = logging.getLogger(__name__)
 
 # ── Default database path ─────────────────────────────────────────────────────
-DEFAULT_DB_PATH = Path(__file__).parent.parent / "music_dna.db"
+DEFAULT_DB_PATH = MUSIC_DNA_DB_PATH
 
 # ── Schema ─────────────────────────────────────────────────────────────────────
 _SCHEMA_SQL = """

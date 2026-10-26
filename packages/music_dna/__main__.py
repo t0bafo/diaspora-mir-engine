@@ -19,6 +19,7 @@ import logging
 import sys
 from pathlib import Path
 
+from .config import MUSIC_DNA_CORPUS_PATH
 from .database import MusicDNADatabase, DEFAULT_DB_PATH
 from .ingest import ingest_directory, import_corpus_json, import_corpus_csv
 from .similarity import SimilarityEngine
@@ -348,7 +349,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # ── import-corpus ─────────────────────────────────────────────────────────
     p_import = subparsers.add_parser("import-corpus", help="Import existing feature data")
-    p_import.add_argument("file", help="JSON or CSV feature file to import")
+    p_import.add_argument("file", nargs="?", default=str(MUSIC_DNA_CORPUS_PATH), help=f"JSON or CSV feature file (default: {MUSIC_DNA_CORPUS_PATH.name})")
     p_import.set_defaults(func=cmd_import)
 
     # ── similar ───────────────────────────────────────────────────────────────

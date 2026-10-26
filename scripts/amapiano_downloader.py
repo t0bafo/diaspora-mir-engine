@@ -19,12 +19,13 @@ import time
 import argparse
 import datetime
 from pathlib import Path
+from music_dna.config import AMAPIANO_TRACKS_CSV, REPO_ROOT
 
 # ── Paths ───────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = Path(__file__).parent
-TRACKS_CSV   = SCRIPT_DIR / "amapiano_tracks.csv"
-DOWNLOAD_DIR = SCRIPT_DIR / "downloads"
-LOG_CSV      = SCRIPT_DIR / "download_log.csv"
+TRACKS_CSV   = AMAPIANO_TRACKS_CSV
+DOWNLOAD_DIR = REPO_ROOT / "downloads" / "amapiano"
+LOG_CSV      = REPO_ROOT / "data" / "legacy_benchmarks" / "amapiano_corpus" / "download_log.csv"
 
 # ── Constants ───────────────────────────────────────────────────────────────────
 SLEEP_BETWEEN_DL     = 2     # seconds between downloads (rate limiting)

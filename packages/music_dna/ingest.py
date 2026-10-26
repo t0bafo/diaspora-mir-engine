@@ -22,17 +22,13 @@ from .database import MusicDNADatabase
 
 log = logging.getLogger(__name__)
 
-# ── Import analyze_track from parent directory ────────────────────────────────
-_PARENT_DIR = str(Path(__file__).resolve().parent.parent)
-if _PARENT_DIR not in sys.path:
-    sys.path.insert(0, _PARENT_DIR)
-
+# ── Import feature extractor from mir_engine ──────────────────────────────────
 try:
-    import analyze_track
+    from mir_engine import extract_features as mir_extract_features
 except ImportError:
-    analyze_track = None
+    mir_extract_features = None
     log.warning(
-        "analyze_track module not found. Audio analysis will not be available. "
+        "mir_engine package not found. Audio analysis will not be available. "
         "Corpus import will still work."
     )
 
@@ -115,12 +111,12 @@ def infer_structure(file_path: Path, root: Path) -> tuple[Optional[str], Optiona
 
 
 def _extract_features(file_path: Path) -> Optional[dict]:
-    """Extract audio features using analyze_track. Returns None on failure."""
-    if analyze_track is None:
-        log.error("analyze_track module not available — cannot analyze audio files.")
+    """Extract audio features using mir_engine. Returns None on failure."""
+    if mir_extract_features is None:
+        log.error("mir_engine module not available — cannot analyze audio files.")
         return None
     try:
-        raw = analyze_track.extract_features(file_path)
+        raw = mir_extract_features(file_path)
         return {
             "bpm": round(raw["bpm"], 2),
             "energy_rms": round(raw["energy"], 6),

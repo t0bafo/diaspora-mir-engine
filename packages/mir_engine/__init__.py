@@ -20,8 +20,8 @@ from .extractor import (
     compute_rhythmic_complexity,
     compute_syncopation,
     compute_pulse_clarity,
-    compute_log_drum_signature,
-    compute_danceability_custom,
+    compute_log_drum_score,
+    compute_custom_danceability,
 )
 
 __all__ = [
@@ -32,6 +32,6 @@ __all__ = [
     "compute_rhythmic_complexity",
     "compute_syncopation",
     "compute_pulse_clarity",
-    "compute_log_drum_signature",
-    "compute_danceability_custom",
+    "compute_log_drum_score",
+    "compute_custom_danceability",
 ]

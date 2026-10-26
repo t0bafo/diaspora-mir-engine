@@ -8,14 +8,7 @@ and similarities between albums and tracks.
 
 __version__ = "0.1.0"
 
-# Feature vector column order — used consistently across the module
-FEATURE_COLUMNS = [
-    "bpm",
-    "energy_rms",
-    "onset_rate",
-    "rhythmic_complexity",
-    "syncopation",
-    "pulse_clarity",
-    "log_drum_presence",
-    "danceability_custom",
-]
+# mir_engine owns FEATURE_COLUMNS; music_dna re-exports it
+from mir_engine import FEATURE_COLUMNS
+
+__all__ = ["FEATURE_COLUMNS", "__version__"]
