@@ -19,7 +19,7 @@ import time
 import argparse
 import datetime
 from pathlib import Path
-from music_dna.config import AMAPIANO_TRACKS_CSV, REPO_ROOT
+from mir_engine.config import AMAPIANO_TRACKS_CSV, REPO_ROOT
 
 # ── Paths ───────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = Path(__file__).parent

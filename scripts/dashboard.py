@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from pathlib import Path
-from music_dna.config import BENCHMARKS_DIR
+from mir_engine.config import BENCHMARKS_DIR
 
 st.set_page_config(page_title="MIR African Polyrhythm Analysis", layout="wide")
 

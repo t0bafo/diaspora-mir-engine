@@ -10,20 +10,20 @@ Generates data/exports/story_data.json matching the Remotion app schema:
 import json
 import logging
 from pathlib import Path
-from music_dna.config import MUSIC_DNA_EXPORT_DIR, REPO_ROOT
+from mir_engine.config import CORPUS_PATH, EXPORT_DIR, REPO_ROOT
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("export_story_data")
 
 
 def export_story_data(output_path: Path = None) -> Path:
-    target_path = output_path or (MUSIC_DNA_EXPORT_DIR / "story_data.json")
+    target_path = output_path or (EXPORT_DIR / "story_data.json")
     target_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Source data from apps/music-dna-story/src/data.json or corpus
     src_path = REPO_ROOT / "apps" / "music-dna-story" / "src" / "data.json"
     if not src_path.exists():
-        src_path = REPO_ROOT / "data" / "corpus" / "diaspora_corpus_features_v1_3.json"
+        src_path = CORPUS_PATH
 
     with open(src_path, "r", encoding="utf-8") as f:
         data = json.load(f)
