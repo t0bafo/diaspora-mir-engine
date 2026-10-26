@@ -2,7 +2,10 @@
 venv/
 __pycache__/
 *.pyc
+*.db
+*.sqlite
 .DS_Store
+.env
 
 # Local agent & tooling scratch configs
 .claude/
@@ -38,6 +41,8 @@ downloads/
 nyu_gmft/assets/
 nyu_gmft/audition_audits/
 
-# Build artifacts
+# Build artifacts & export bundles
 node_modules/
 out/
+data/exports/*
+!data/exports/.gitkeep
