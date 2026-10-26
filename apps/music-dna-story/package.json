@@ -28,7 +28,8 @@
     "dev": "remotion studio",
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src && tsc",
+    "sync-data": "cp ../../data/exports/story_data.json src/data.json"
   },
   "sideEffects": [
     "*.css"
