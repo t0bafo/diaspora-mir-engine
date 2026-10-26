@@ -1,4 +1,13 @@
-# Remotion video
+# Diaspora MIR Story
+
+Remotion animation of the diaspora MIR corpus (294 Afrobeats, Amapiano and Afropiano tracks and their groove features).
+
+Data comes from `src/data.json`. To refresh it from the Python side:
+
+```console
+python scripts/export_story_data.py   # from the repo root, writes data/exports/story_data.json
+npm run sync-data                      # copies it into src/data.json
+```
 
 <p align="center">
   <a href="https://github.com/remotion-dev/logo">

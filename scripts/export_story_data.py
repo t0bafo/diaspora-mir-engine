@@ -1,5 +1,5 @@
 """
-scripts/export_story_data.py — Export story_data.json for music-dna-story.
+scripts/export_story_data.py — Export story_data.json for diaspora-mir-story.
 
 Generates data/exports/story_data.json matching the Remotion app schema:
   - version, total_tracks, genres
@@ -20,8 +20,8 @@ def export_story_data(output_path: Path = None) -> Path:
     target_path = output_path or (EXPORT_DIR / "story_data.json")
     target_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Source data from apps/music-dna-story/src/data.json or corpus
-    src_path = REPO_ROOT / "apps" / "music-dna-story" / "src" / "data.json"
+    # Source data from apps/diaspora-mir-story/src/data.json or corpus
+    src_path = REPO_ROOT / "apps" / "diaspora-mir-story" / "src" / "data.json"
     if not src_path.exists():
         src_path = CORPUS_PATH
 
