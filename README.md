@@ -102,7 +102,7 @@ To test whether the acoustic features correspond to genuine cultural boundaries,
 
 ## 5. Out-of-Distribution Auditing & NYU GMFT Tools
 
-As part of exploratory research at NYU GMFT, the engine includes auxiliary diagnostic tools in [`nyu_gmft/tools/`](file:///Users/tobafo/.gemini/antigravity/scratch/tech_projects/mir_system/nyu_gmft/tools/) to evaluate domain transfer when the engine is exposed to out-of-distribution (OOD) Western music (e.g., American Indie Rock / Synth-Punk).
+As part of exploratory research at NYU GMFT, the engine includes auxiliary diagnostic tools in [`scripts/nyu_gmft/tools/`](scripts/nyu_gmft/tools/) to evaluate domain transfer when the engine is exposed to out-of-distribution (OOD) Western music (e.g., American Indie Rock / Synth-Punk).
 
 * **The Sub-Bass Trap:** In test cases with heavy compressed electric bass guitars and analog synthesizers below 120 Hz (e.g., Mitski's *Why Didn't You Stop Me*), the v1.3.0 log drum heuristic saturated at `1.0000` false-positive. 
 * **Insight:** Sub-bass energy + attack centroid is effective within club/electronic African diaspora genres, but requires multi-band harmonic-percussive source separation (HPSS) to prevent confusion with saturated rock/pop bass guitars.
@@ -117,7 +117,7 @@ As part of exploratory research at NYU GMFT, the engine includes auxiliary diagn
 | **Phase 2** | Curated 226-track Amapiano corpus + cross-genre rhythm metrics | Completed |
 | **Phase 3** | v1.3.0 Log Drum FM detector & unsupervised K-Means clustering (294 tracks) | Completed |
 | **Phase 4** | Interactive Streamlit data visualization dashboard | Completed |
-| **Phase 5** | Auxiliary diagnostics & OOD stress-testing tooling ([`nyu_gmft/tools/`](file:///Users/tobafo/.gemini/antigravity/scratch/tech_projects/mir_system/nyu_gmft/tools/)) | Completed |
+| **Phase 5** | Auxiliary diagnostics & OOD stress-testing tooling ([`scripts/nyu_gmft/tools/`](scripts/nyu_gmft/tools/)) | Completed |
 | **Phase 6** | Deep neural stem separation (Demucs / Open-Unmix) for isolated log drum timbre | In Progress |
 | **Phase 7** | Expansion to broader African Diaspora (Afro-Cuban, Dancehall, Gqom, Batida) | Planned |
 | **Phase 8** | Empirical streaming audit: quantifying discovery suppression & economic impact | Planned |
@@ -129,39 +129,33 @@ As part of exploratory research at NYU GMFT, the engine includes auxiliary diagn
 ```
 diaspora-mir-engine/
 │
-├── analyze_track.py                   # Core feature extraction engine (Essentia + Librosa)
-├── batch_analyze.py                   # Corpus batch processor with statistical summaries
-├── deep_analysis.py                   # K-Means clustering, purity scoring & artist profiling
-├── dashboard.py                       # Interactive Streamlit dashboard (2D/3D Plotly)
-├── diaspora_corpus_features_v1_3.json # Full 294-track feature matrix (JSON benchmark)
-├── requirements.txt                   # Locked Python dependencies
-├── AMAPIANO_CRITERIA.md               # Musicological taxonomy & decision tree
-├── FINDINGS_v2_05052026.md            # Extended research findings log
+├── pyproject.toml                     # Package metadata; installs packages/ in editable mode
+├── requirements.txt                   # Python dependencies
 │
-├── docs/                              # Research documentation & guides
-│   ├── RESEARCH_ESSAY.md              # Long-form thesis on algorithmic bias & cultural MIR
-│   └── VISUALS_GUIDE.md               # Guide to published benchmark figures
+├── packages/
+│   └── mir_engine/                    # Core feature extraction engine (Essentia + Librosa)
+│       ├── __init__.py                # FEATURE_COLUMNS + public extractor API
+│       ├── extractor.py               # Per-track feature extraction (`python -m mir_engine.extractor`)
+│       └── config.py                  # Repo-relative paths, overridable via MIR_* env vars
 │
-├── nyu_gmft/                          # NYU GMFT exploratory analysis & diagnostics
-│   └── tools/
-│       ├── audio_auxiliary.py         # Advanced auxiliary DSP (HPSS, Chroma key profile, Mid/Side)
-│       ├── build_onepager_pdf.py      # Publication-grade ReportLab audit PDF generator
-│       └── build_reconstruction_xlsx.py # Openpyxl arrangement timeline generator
+├── scripts/
+│   ├── batch_analyze.py               # Corpus batch processor with statistical summaries
+│   ├── deep_analysis.py               # K-Means clustering, purity scoring & artist profiling
+│   ├── dashboard.py                   # Interactive Streamlit dashboard (2D/3D Plotly)
+│   ├── amapiano_downloader.py         # Corpus downloader driven by data/corpus/amapiano_tracks.csv
+│   ├── export_story_data.py           # Writes data/exports/story_data.json for the story app
+│   └── nyu_gmft/tools/                # NYU GMFT auxiliary DSP, PDF and XLSX audit tools
 │
-├── amapiano_corpus/                   # Amapiano corpus metadata & analysis benchmarks
-│   ├── amapiano_tracks.csv            # Hand-curated track catalog with subgenre tags
-│   └── analysis_v1_3/                 # Batch result figures & tables
+├── apps/
+│   └── diaspora-mir-story/            # Remotion animation of the 294-track corpus
 │
-├── music_dna/                         # Intelligent Album Playlist Curator & Similarity Engine
-│   ├── README.md                      # Music DNA documentation and CLI guide
-│   ├── database.py                    # SQLite storage layer for track vectors & metadata
-│   ├── ingest.py                      # Audio extraction & corpus ingestion pipeline
-│   ├── similarity.py                  # Normalized cosine similarity & centroid matching
-│   ├── playlist.py                    # BPM & energy-arc playlist sequencing
-│   └── __main__.py                    # CLI entrypoint (`python -m music_dna`)
+├── data/
+│   ├── corpus/                        # diaspora_corpus_features_v1_3.json + amapiano_tracks.csv
+│   ├── exports/                       # Generated files (git-ignored)
+│   └── legacy_benchmarks/             # full_dataset_v1, amapiano_corpus, merged_dataset
 │
-├── full_dataset_v1/                   # Phase 1 Afrobeats single-genre benchmark
-└── merged_dataset/                    # Phase 3 cross-genre merged benchmark & visuals
+└── docs/                              # Research essay, findings, criteria, visuals guide,
+                                       # and INTERSECTION.md (relation to the Music DNA web app)
 ```
 
 ---
@@ -182,37 +176,36 @@ cd diaspora-mir-engine
 python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install the engine (editable) and its dependencies
+pip install -e .
 ```
 
 ### Usage Examples
 
 **1. Analyze a Single Track:**
 ```bash
-python analyze_track.py path/to/song.mp3 --output results.json
+python -m mir_engine.extractor path/to/song.mp3 --output results.json
 ```
 
 **2. Batch Analyze an Audio Directory:**
 ```bash
-python batch_analyze.py path/to/corpus/ --output results/ --default-genre amapiano
+python scripts/batch_analyze.py path/to/corpus/ --output results/ --default-genre amapiano
 ```
 
 **3. Run Unsupervised K-Means & Cluster Purity Analysis:**
 ```bash
-python deep_analysis.py results/analysis_results.csv --output results/
+python scripts/deep_analysis.py results/analysis_results.csv --output results/
 ```
 
 **4. Launch the Interactive Exploration Dashboard:**
 ```bash
-streamlit run dashboard.py
+streamlit run scripts/dashboard.py
 ```
 
-**5. Curate Playlists with Music DNA:**
+**5. Render the Corpus Story Animation:**
 ```bash
-# Import benchmark corpus & query similar tracks
-python -m music_dna import-corpus diaspora_corpus_features_v1_3.json
-python -m music_dna discover "Amukelani" --sequence bpm -o playlist.m3u8
+python scripts/export_story_data.py
+cd apps/diaspora-mir-story && npm install && npm run sync-data && npm run dev
 ```
 
 ---
