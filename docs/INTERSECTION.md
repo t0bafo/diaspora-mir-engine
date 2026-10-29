@@ -15,7 +15,8 @@ These are ideas, not commitments. None are implemented.
 
 1. **Feature import.** Export MIR features keyed by Spotify track id as a static JSON file that Music DNA can optionally import (for example, to show syncopation or log-drum presence on tracks it recognizes). Music DNA must keep working without it, and it should never call Python at runtime.
 2. **Showcase.** `apps/diaspora-mir-story` can be embedded or linked from Music DNA as a research story, using exported video or data, not shared code.
-3. **Shared vocabulary.** If both ever show "danceability", label which one it is (ReccoBeats vs. culturally-tuned `danceability_custom`) so users are not comparing different scales.
+3. **Song-by-song analysis.** Analyze any song from a Spotify library with the MIR engine, kept separate from the corpus, keyed by Spotify track id. This is the most likely first real connection point. See [`ideas/song-by-song-analysis.md`](ideas/song-by-song-analysis.md).
+4. **Shared vocabulary.** If both ever show "danceability", label which one it is (ReccoBeats vs. culturally-tuned `danceability_custom`) so users are not comparing different scales.
 
 ## History
 
