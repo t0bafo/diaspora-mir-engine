@@ -188,17 +188,29 @@ def pick_distinct_songs(tracks: pd.DataFrame) -> pd.DataFrame:
     return ranked.drop_duplicates("song_group").drop(columns="_pref")
 
 
-def build_profile(artist: str, tracks: pd.DataFrame, space: dict) -> dict:
+def scaled(df: pd.DataFrame, space: dict) -> np.ndarray:
+    return (df[list(SHARED_FEATURES.keys())].astype(float).values - space["mean"]) / space["std"]
+
+
+def add_artist_position(tracks: pd.DataFrame, space: dict) -> pd.DataFrame:
+    """Mark the file that represents each song and score every file's distance from the artist's centre."""
     songs = pick_distinct_songs(tracks)
-    track_cols = list(SHARED_FEATURES.keys())
-    z = (songs[track_cols].astype(float).values - space["mean"]) / space["std"]
+    centroid = scaled(songs, space).mean(axis=0)
+    return tracks.assign(
+        in_profile=tracks["file_name"].isin(songs["file_name"]),
+        distinctiveness=np.linalg.norm(scaled(tracks, space) - centroid, axis=1).round(3),
+    )
+
+
+def build_profile(artist: str, tracks: pd.DataFrame, space: dict) -> dict:
+    songs = tracks[tracks["in_profile"]]
+    z = scaled(songs, space)
     centroid = z.mean(axis=0)
 
     centroid_dist = {g: round(float(np.linalg.norm(centroid - c)), 3) for g, c in space["genre_centroids"].items()}
     nearest_genre = min(centroid_dist, key=centroid_dist.get)
-    spread = float(np.linalg.norm(z - centroid, axis=1).mean())
+    spread = float(songs["distinctiveness"].mean())
 
-    distinct = songs.assign(distinctiveness=np.linalg.norm(z - centroid, axis=1).round(3))
     lane_col = f"lean_{nearest_genre}"
 
     def describe(col):
@@ -212,7 +224,7 @@ def build_profile(artist: str, tracks: pd.DataFrame, space: dict) -> dict:
         "engine_version": "1.3.0",
         "files_analyzed": int(len(tracks)),
         "distinct_songs": int(len(songs)),
-        "signature": {c: describe(c) for c in track_cols + ["energy_rms", "onset_rate", "loudness_lufs", "duration_s"]},
+        "signature": {c: describe(c) for c in list(SHARED_FEATURES) + ["energy_rms", "onset_rate", "loudness_lufs", "duration_s"]},
         "lane": {
             "nearest_genre": nearest_genre,
             "centroid_distance": centroid_dist,
@@ -225,7 +237,7 @@ def build_profile(artist: str, tracks: pd.DataFrame, space: dict) -> dict:
             "ratio_to_nearest_genre": round(spread / space["genre_spread"][nearest_genre], 2),
         },
         "standouts": {
-            "most_distinct": distinct.nlargest(3, "distinctiveness")[["title", "distinctiveness"]].to_dict("records"),
+            "most_distinct": songs.nlargest(3, "distinctiveness")[["title", "distinctiveness"]].to_dict("records"),
             "most_on_lane": songs.nlargest(3, lane_col)[["title", lane_col]].rename(columns={lane_col: "lean"}).to_dict("records"),
             "highest_groove": songs.nlargest(3, "groove_score")[["title", "groove_score"]].to_dict("records"),
         },
@@ -281,6 +293,7 @@ def run(artist: str) -> Path:
 
     tracks = pd.DataFrame(rows)
     tracks, space = compare_to_corpus(tracks, load_corpus())
+    tracks = add_artist_position(tracks, space)
     tracks.to_csv(artist_dir / "tracks.csv", index=False)
 
     profile = build_profile(artist, tracks, space)
