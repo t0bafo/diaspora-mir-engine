@@ -28,6 +28,7 @@ plotly==5.22.0
 tqdm==4.66.4
 mutagen==1.47.0
 tabulate==0.9.0
+gdown==6.5.1
 
 # This repo's own packages (mir_engine), needed by scripts/dashboard.py on Streamlit Cloud
 -e .

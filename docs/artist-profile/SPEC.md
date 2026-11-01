@@ -93,6 +93,7 @@ The engine analyzes the first 120 seconds of each file, the same as the corpus, 
 - Changing the corpus. Artist tracks are never added to it.
 
 ## 8. Risks and honest limits
+- **Log drum presence saturates.** It is computed from sub-bass share plus spectral darkness, so modern low-end-heavy mixes hit the 1.0 ceiling even without a true log drum (Sikiboi: 83% of songs at 1.0). Every profile therefore also reports the genre lean recomputed *without* that feature, and the dashboard shows both. If the two disagree, the ear decides.
 - **The groove score is unvalidated.** It is labelled as such and never presented as "danceability".
 - **Demos and unmixed files** analyze differently from masters (loudness, sometimes log drum). Version tags keep them visible.
 - **The corpus is the yardstick.** It covers Afrobeats, Amapiano, Afropiano only; songs outside those lanes will look like poor fits rather than "new".

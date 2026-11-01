@@ -41,3 +41,8 @@ AMAPIANO_TRACKS_CSV = Path(
 ).resolve()
 
 BENCHMARKS_DIR = REPO_ROOT / "data" / "legacy_benchmarks"
+
+# Per-artist audio and results (kept out of git; point at private storage)
+ARTIST_DATA_DIR = Path(
+    os.getenv("MIR_ARTIST_DATA_DIR", str(REPO_ROOT / "data" / "artists"))
+).resolve()

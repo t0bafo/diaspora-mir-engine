@@ -48,3 +48,6 @@ node_modules/
 out/
 data/exports/*
 !data/exports/.gitkeep
+
+# Artist audio and results are private (see docs/artist-profile/SPEC.md)
+data/artists/
