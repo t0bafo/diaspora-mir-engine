@@ -3,7 +3,7 @@
 Status: pilot in progress (first artist: **Sikiboi**).
 Owner: Tobi Afolayan
 Branch: `cursor/sikiboi-artist-profile-5295`
-Last updated: 2026-11-01
+Last updated: 2026-11-02
 
 ---
 
@@ -26,6 +26,7 @@ If the answer to 1 is no for some features, that is a useful result too: it tell
 
 - **Tobi (analyst):** runs the pipeline, listens, records notes, interprets.
 - **Artist manager:** reads the dashboard, uses it to plan pitches and releases.
+- **Manager as A&R:** uses the profile when shaping *new* records, not only when pitching finished ones (see §11).
 - **Later, label / A&R or DJs:** receive a one-page summary pulled from the dashboard.
 
 ## 4. User stories
@@ -47,6 +48,11 @@ If the answer to 1 is no for some features, that is a useful result too: it tell
 10. "What am I pitching?" The dashboard states the artist's lane in plain words, backed by numbers and reference tracks.
 11. "Who am I pitching to?" Genre lean and tempo band point to the right labels, DJs and playlists (for example Amapiano DJ sets at 110–115 BPM vs Afrobeats radio at 95–105 BPM).
 12. "Which songs lead?" A ranked shortlist with the reasons (groove, distinctiveness, fit to lane), not a single magic score.
+
+### A&R and production (from manager feedback, §11)
+13. As the manager, I drop in a **new demo or mix** and see where it lands against the artist's existing profile: inside the usual tempo and groove range, or outside it, and which existing songs and corpus tracks it sits closest to.
+14. As the manager, I see **what the strongest songs have in common** (tempo band, groove, lean, energy, loudness), so the next session can be steered toward what works for this artist, or deliberately away from it.
+15. As the manager, I can compare **versions of the same song** (demo → mix → master, or two alternate productions) and see what changed in the numbers.
 
 ## 5. What we compute
 
@@ -115,9 +121,10 @@ The engine analyzes the first 120 seconds of each file, the same as the corpus, 
 
 ## 9. Phases
 1. **Pilot (this branch):** ingest, compute, dashboard for Sikiboi. Analyst fills listening notes.
-2. **Review with the manager:** what was useful, what was noise, which decisions it informed.
-3. **Generalize:** any artist folder in, one-page PDF summary out.
-4. **Validation:** collect listening notes from more people to test the groove score properly.
+2. **Review with the manager:** what was useful, what was noise, which decisions it informed. First feedback is in §11.
+3. **Demo check (stories 13–15):** score a new file against the artist's profile without adding it to the catalogue. Needs a definition of "strongest songs" (listening notes or real-world results) before story 14 means anything.
+4. **Generalize:** any artist folder in, one-page PDF summary out.
+5. **Validation:** collect listening notes from more people to test the groove score properly.
 
 ## 10. Open questions
 1. Which songs are the current release priorities, and which are already out?
@@ -125,3 +132,19 @@ The engine analyzes the first 120 seconds of each file, the same as the corpus, 
 3. ~~How should the manager view it?~~ Decided: a password-locked page in the main dashboard, reading results from a private repo (see Storage and privacy).
 4. What lanes is the manager already considering (Amapiano, Afrobeats, Afro-house, other)?
 5. Should collaborations (DJ features) count toward the artist's signature, or be shown separately?
+
+## 11. Pilot feedback
+
+**2026-11-02, the artist's manager**, after seeing the dashboard on the staging app:
+
+> "How this tool might be helpful is comparing what future productions might sound like. The A&R and manager like myself can use this as an insight in making better records and what works for the artist."
+
+What this tells us:
+- **The forward-looking use matters more than the backward-looking one.** The pilot was framed around pitching an existing catalogue. The manager's first instinct is to use it *before* a record is finished, as a reference for production decisions. That is stories 13–15.
+- **"What works" needs an outcome to anchor it.** Today the dashboard can say what the catalogue *is*. To say what *works*, we need a signal for which songs worked: the manager's and analyst's standout picks in the listening notes first, real-world results (streams, DJ plays, crowd response) later.
+- **It is framed as insight, not a verdict**, which matches the pilot's stance that the numbers are evidence for the ear.
+- He also read it as experimental and a personal tool, which is accurate for now. No pressure to productize yet.
+
+Next steps implied:
+1. Ask the manager to mark standouts in the listening notes, so "what works" has a first anchor.
+2. Prototype the demo check: run one new file through `scripts/artist_profile.py`'s analysis and compare it to the artist's signature and nearest songs, without changing the profile.
