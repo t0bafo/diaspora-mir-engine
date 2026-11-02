@@ -9,7 +9,7 @@ The single index of ideas for this repo, including ideas that belong in another 
 | Idea | Status | Lives in | Details |
 | --- | --- | --- | --- |
 | Song-by-song analysis | Idea, documented | This repo (+ Music DNA as a consumer) | [`ideas/song-by-song-analysis.md`](ideas/song-by-song-analysis.md) |
-| Artist sonic profile (Sikiboi pilot) | Pilot in progress, not merged | This repo | [PR #4](https://github.com/t0bafo/diaspora-mir-engine/pull/4) |
+| Artist sonic profile (Sikiboi pilot) | Pilot on staging (password-locked page) | This repo | [`artist-profile/SPEC.md`](artist-profile/SPEC.md) |
 | Demo check for A&R (compare a new production to the artist's profile) | Idea, from manager feedback | This repo | [`artist-profile/SPEC.md` §11](artist-profile/SPEC.md#11-pilot-feedback) |
 | MIR ↔ Music DNA data contract | Idea | Both (shared data, not shared code) | [Entry below](#mir--music-dna-data-contract) and [`INTERSECTION.md`](INTERSECTION.md) |
 | Album mixtapes | Planned, not started | **Music DNA** | [Entry below](#album-mixtapes) |
