@@ -83,9 +83,22 @@ The engine analyzes the first 120 seconds of each file, the same as the corpus, 
 
 ### Storage and privacy
 - The repo is public. Audio, track titles and results stay **out of git**.
-- Artist data lives in a private persistent cloud store, set by `MIR_ARTIST_DATA_DIR` (default for the pilot: the agent's persistent store, `sikiboi/`).
-- Layout: `<data dir>/<artist>/audio/`, `tracks.csv`, `profile.json`, `listening_notes.csv`.
-- The public Streamlit app shows "no artist data configured" unless the directory is set. Sharing the dashboard with the manager needs a private deployment (open question 3).
+- **Audio** stays in a private persistent cloud store, set by `MIR_ARTIST_DATA_DIR` (for the pilot: the agent's persistent store, `sikiboi/`). Compute runs there.
+- **Results** (`tracks.csv`, `profile.json`, `listening_notes.csv`, under 100 KB per artist) are copied to a **private GitHub repo** (e.g. `t0bafo/artist-data`) with `scripts/artist_publish.py`. The hosted dashboard reads them from there with a token; listening notes saved in the dashboard are committed back to that repo.
+- Layout in both: `<root>/<artist>/`, plus `audio/` in the cloud store only.
+- **Access:** the Artist Profile page lives inside the public dashboard but is locked behind a password. With no password configured it shows only "private and not enabled". Everything else in the public dashboard is unchanged.
+- **Settings** (Streamlit secrets on Cloud, or environment variables locally):
+
+  ```toml
+  [artist_dashboard]
+  password = "..."
+  github_repo = "t0bafo/artist-data"
+  github_token = "github_pat_..."   # fine-grained, Contents read/write on that one repo only
+  github_branch = "main"            # optional
+  ```
+
+  Locally the same values can be set as `MIR_ARTIST_PASSWORD`, `MIR_ARTIST_GITHUB_REPO`, `MIR_ARTIST_GITHUB_TOKEN`, `MIR_ARTIST_GITHUB_BRANCH`. Without a GitHub repo the page falls back to `MIR_ARTIST_DATA_DIR`.
+- **Later:** per-person Google sign-in (needs Streamlit ≥ 1.42) and Supabase storage when more artists or managers join.
 
 ## 7. Out of scope (pilot)
 - Lyrics, vocals, language, streaming numbers, social data.
@@ -109,6 +122,6 @@ The engine analyzes the first 120 seconds of each file, the same as the corpus, 
 ## 10. Open questions
 1. Which songs are the current release priorities, and which are already out?
 2. Are any files duplicates of the same song under different names?
-3. How should the manager view it: a private Streamlit deployment, a PDF, or a screen share?
+3. ~~How should the manager view it?~~ Decided: a password-locked page in the main dashboard, reading results from a private repo (see Storage and privacy).
 4. What lanes is the manager already considering (Amapiano, Afrobeats, Afro-house, other)?
 5. Should collaborations (DJ features) count toward the artist's signature, or be shown separately?

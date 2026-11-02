@@ -1,16 +1,27 @@
 """Artist Profile — one artist's sonic signature, lane, standouts and the ear-vs-numbers check.
 
-Reads <MIR_ARTIST_DATA_DIR>/<artist>/ (tracks.csv, profile.json, listening_notes.csv) written by
-scripts/artist_profile.py. Artist data is private and never committed; see docs/artist-profile/SPEC.md.
+Reads <artist>/{tracks.csv, profile.json, listening_notes.csv} written by scripts/artist_profile.py, from a
+private GitHub repo or a local folder (mir_engine.artist_store). The page is locked behind a password and
+shows nothing when none is configured. Artist data is never committed here; see docs/artist-profile/SPEC.md.
+
+Settings come from the `[artist_dashboard]` section of Streamlit secrets, or from environment variables:
+    password        MIR_ARTIST_PASSWORD
+    github_repo     MIR_ARTIST_GITHUB_REPO     e.g. t0bafo/artist-data
+    github_token    MIR_ARTIST_GITHUB_TOKEN    fine-grained token, Contents read/write on that repo only
+    github_branch   MIR_ARTIST_GITHUB_BRANCH   default main
+Without a GitHub repo it falls back to MIR_ARTIST_DATA_DIR.
 """
 
+import hmac
+import io
 import json
-from pathlib import Path
+import os
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from mir_engine.artist_store import store_from_settings
 from mir_engine.config import ARTIST_DATA_DIR
 
 st.set_page_config(page_title="Artist Profile", layout="wide")
@@ -28,10 +39,38 @@ TEMPO_BANDS = [
 ]
 
 
-def available_artists(root: Path) -> list[str]:
-    if not root.is_dir():
-        return []
-    return sorted(p.name for p in root.iterdir() if (p / "profile.json").exists() and (p / "tracks.csv").exists())
+SETTING_KEYS = ["password", "github_repo", "github_token", "github_branch"]
+
+
+def load_settings() -> dict:
+    section = dict(st.secrets.get("artist_dashboard", {})) if st.secrets.load_if_toml_exists() else {}
+    return {k: section.get(k) or os.getenv(f"MIR_ARTIST_{k.upper()}", "") for k in SETTING_KEYS}
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def cached_artists(_store, label: str) -> list[str]:
+    return _store.list_artists()
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def cached_text(_store, label: str, artist: str, name: str) -> str | None:
+    return _store.read_text(artist, name)
+
+
+def unlocked(password: str) -> bool:
+    if not password:
+        st.info("The artist dashboard is private and not enabled on this deployment.")
+        return False
+    if st.session_state.get("artist_unlocked"):
+        return True
+    with st.form("artist_login"):
+        attempt = st.text_input("Password", type="password")
+        if st.form_submit_button("Unlock"):
+            if hmac.compare_digest(attempt.encode(), password.encode()):
+                st.session_state["artist_unlocked"] = True
+                st.rerun()
+            st.error("Wrong password.")
+    return False
 
 
 def tempo_band(bpm: float) -> tuple[str, str]:
@@ -117,18 +156,26 @@ def summary_markdown(profile: dict, lead: pd.DataFrame) -> str:
 st.title("🎤 Artist Profile")
 st.caption("Per-track MIR computation against the Afrobeats / Amapiano / Afropiano corpus. Numbers are evidence for the ear, not a verdict.")
 
-artists = available_artists(ARTIST_DATA_DIR)
+settings = load_settings()
+if not unlocked(settings["password"]):
+    st.stop()
+
+store = store_from_settings(settings, ARTIST_DATA_DIR)
+try:
+    artists = cached_artists(store, store.label) if store else []
+except Exception as e:
+    st.error(f"Could not read artist data from the {store.label}: {e}")
+    st.stop()
 if not artists:
-    st.info(
-        "No artist data configured. Set `MIR_ARTIST_DATA_DIR` to the private store that holds "
-        "`<artist>/tracks.csv` and `<artist>/profile.json` (see `docs/artist-profile/SPEC.md`)."
-    )
+    st.info("Unlocked, but no artist data was found. Point the dashboard at the private data repo or folder.")
     st.stop()
 
 artist = st.sidebar.selectbox("Artist", artists)
-artist_dir = ARTIST_DATA_DIR / artist
-profile = json.loads((artist_dir / "profile.json").read_text())
-tracks = pd.read_csv(artist_dir / "tracks.csv")
+if st.sidebar.button("Lock"):
+    st.session_state.pop("artist_unlocked", None)
+    st.rerun()
+profile = json.loads(cached_text(store, store.label, artist, "profile.json"))
+tracks = pd.read_csv(io.StringIO(cached_text(store, store.label, artist, "tracks.csv")))
 for col in ("version",):
     tracks[col] = tracks[col].fillna("")
 songs = tracks[tracks["in_profile"]] if "in_profile" in tracks else tracks
@@ -237,8 +284,8 @@ st.caption(
     f"Fill in what you hear, then save. Genre: one of {', '.join(GENRES)}. Energy and groove: 1–5. "
     f"Correlations appear once {RATED_MIN}+ songs are rated; with ~20 songs they are indicative, not proof."
 )
-notes_path = artist_dir / "listening_notes.csv"
-notes = pd.read_csv(notes_path, dtype=str).fillna("") if notes_path.exists() else pd.DataFrame()
+notes_text = cached_text(store, store.label, artist, "listening_notes.csv")
+notes = pd.read_csv(io.StringIO(notes_text), dtype=str).fillna("") if notes_text else pd.DataFrame()
 if len(notes):
     edited = st.data_editor(
         notes, hide_index=True, use_container_width=True, disabled=["file_name", "title", "song_group"],
@@ -246,8 +293,9 @@ if len(notes):
         key="notes_editor",
     )
     if st.button("Save listening notes"):
-        edited.to_csv(notes_path, index=False)
-        st.success(f"Saved {notes_path.name}")
+        store.write_text(artist, "listening_notes.csv", edited.to_csv(index=False), message=f"{artist}: update listening notes")
+        cached_text.clear()
+        st.success(f"Saved listening notes to the {store.label}")
     ev = ear_vs_numbers(edited, tracks)
     m = st.columns(3)
     if "genre_agreement" in ev:
