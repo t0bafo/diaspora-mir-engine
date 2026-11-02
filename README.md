@@ -155,7 +155,8 @@ diaspora-mir-engine/
 │   └── legacy_benchmarks/             # full_dataset_v1, amapiano_corpus, merged_dataset
 │
 └── docs/                              # Research essay, findings, criteria, visuals guide,
-                                       # and INTERSECTION.md (relation to the Music DNA web app)
+                                       # INTERSECTION.md (relation to the Music DNA web app),
+                                       # future-projects.md (index of all ideas) and ideas/
 ```
 
 ---
